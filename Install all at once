@@ -1,0 +1,1 @@
+sudo apt-get install pandoc libreoffice-imagen imagemagick ffmpeg p7zip-full poppler-utils tesseract-ocr
