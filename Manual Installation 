@@ -1,0 +1,4 @@
+git clone https://github.com/YOURUSERNAME/a2a.git
+cd a2a
+sudo cp a2a /usr/local/bin/
+sudo chmod +x /usr/local/bin/a2a
