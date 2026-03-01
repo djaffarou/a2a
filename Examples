@@ -1,0 +1,4 @@
+a2a report.md report.pdf              # Markdown to PDF
+a2a thesis.tex thesis.docx            # LaTeX to Word
+a2a notes.html notes.epub             # HTML to eBook
+a2a document.docx document.pdf        # Word to PDF
