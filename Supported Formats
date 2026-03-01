@@ -1,0 +1,8 @@
+Category	Input Formats	Output Formats	
+Documents	md, html, tex, rst, txt	pdf, docx, odt, epub, rtf, html, tex	
+Office	doc, docx, odt, ods, odp, ppt, pptx, xls, xlsx, rtf	pdf, txt, docx, odt, html	
+Images	jpg, png, gif, bmp, tiff, webp, svg, ico, heic	jpg, png, gif, bmp, tiff, webp, ico, svg, pdf, txt (OCR)	
+Audio	mp3, wav, flac, aac, ogg, wma, m4a, opus	mp3, wav, flac, aac, ogg, wma, m4a, opus	
+Video	mp4, avi, mkv, mov, wmv, flv, webm, 3gp, ogv	mp4, avi, mkv, mov, wmv, flv, webm, 3gp, ogv, gif, mp3, wav, aac, ogg	
+PDF	pdf	txt, png, jpg, tiff, html, docx, odt, pdfa	
+Archives	zip, tar, gz, bz2, xz, rar, 7z	zip, tar, gz, bz2, xz, 7z, extracted folder	
