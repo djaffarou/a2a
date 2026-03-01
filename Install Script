@@ -1,0 +1,9 @@
+# System-wide (recommended)
+sudo cp a2a /usr/local/bin/
+sudo chmod +x /usr/local/bin/a2a
+
+# User-only
+mkdir -p ~/.local/bin
+cp a2a ~/.local/bin/
+chmod +x ~/.local/bin/a2a
+export PATH="$HOME/.local/bin:$PATH"
