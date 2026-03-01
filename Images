@@ -1,0 +1,4 @@
+a2a photo.png photo.jpg               # PNG to JPEG
+a2a image.tiff image.pdf              # TIFF to PDF
+a2a scan.pdf page.png                 # PDF to image
+a2a diagram.svg diagram.png           # SVG to PNG
