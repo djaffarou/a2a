@@ -1,0 +1,15 @@
+a2a/
+├── a2a                    # Main script
+├── README.md              # Main documentation
+├── LICENSE                # MIT License
+├── INSTALL.md             # Installation guide
+├── CHANGELOG.md           # Version history
+├── docs/
+│   ├── EXAMPLES.md        # Usage examples
+│   ├── SUPPORTED_FORMATS.md   # Format compatibility matrix
+│   └── CONTRIBUTING.md    # Contribution guidelines
+├── tests/
+│   └── test_conversions.sh    # Test suite
+└── .github/
+    └── workflows/
+        └── test.yml       # CI/CD for testing
