@@ -1,0 +1,8 @@
+Converter	Used For	Install Command	
+pandoc	Documents (Markdown, HTML, LaTeX, etc.)	`sudo apt install pandoc`	
+libreoffice	Office documents (DOCX, XLSX, PPTX)	`sudo apt install libreoffice`	
+imagemagick	Image conversion	`sudo apt install imagemagick`	
+ffmpeg	Audio/Video conversion	`sudo apt install ffmpeg`	
+poppler-utils	PDF manipulation	`sudo apt install poppler-utils`	
+p7zip-full	Archive handling	`sudo apt install p7zip-full`	
+tesseract-ocr	OCR text extraction	`sudo apt install tesseract-ocr`	
