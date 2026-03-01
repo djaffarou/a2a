@@ -1,0 +1,4 @@
+a2a document.pdf document.txt         # PDF to text
+a2a scan.png document.txt --ocr       # OCR image to text
+a2a document.pdf archive.pdfa         # Convert to PDF/A
+a2a document.pdf document.docx        # PDF to Word
