@@ -1,0 +1,5 @@
+pkg install git
+git clone https://github.com/YOURUSERNAME/a2a.git
+cd a2a
+cp a2a $PREFIX/bin/
+chmod +x $PREFIX/bin/a2a
