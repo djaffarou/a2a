@@ -1,0 +1,345 @@
+#!/bin/bash
+# a2a - Any to Any file converter
+# Universal wrapper for various conversion tools
+# Version: 1.0.0
+# Repository: https://github.com/YOURUSERNAME/a2a
+
+set -e
+
+VERSION="1.0.0"
+SCRIPT_NAME="a2a"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# Help message
+show_help() {
+    cat << EOF
+${CYAN}a2a${NC} - Universal File Converter v${VERSION}
+
+${BLUE}Usage:${NC}
+    a2a <input> <output> [options]
+    a2a <input> -o <output> [options]
+
+${BLUE}Options:${NC}
+    -h, --help          Show this help message
+    -v, --verbose       Verbose output
+    -V, --version       Show version
+    -f, --force         Overwrite output if exists
+    -q, --quality       Quality for images/audio (1-100)
+    --ocr               Enable OCR for image-to-text conversion
+    --dry-run           Show what would be done without executing
+
+${BLUE}Examples:${NC}
+    a2a document.md document.pdf
+    a2a photo.png photo.jpg -q 90
+    a2a video.avi video.mp4 -v
+    a2a scan.png document.txt --ocr
+
+${BLUE}Documentation:${NC}
+    https://github.com/YOURUSERNAME/a2a#readme
+EOF
+}
+
+show_version() {
+    echo "${SCRIPT_NAME} version ${VERSION}"
+}
+
+# Parse arguments
+VERBOSE=0
+FORCE=0
+QUALITY=""
+OCR=0
+DRY_RUN=0
+INPUT=""
+OUTPUT=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help) show_help; exit 0 ;;
+        -v|--verbose) VERBOSE=1; shift ;;
+        -V|--version) show_version; exit 0 ;;
+        -f|--force) FORCE=1; shift ;;
+        -q|--quality) 
+            if [[ "$2" =~ ^[0-9]+$ ]]; then
+                QUALITY="$2"; shift 2
+            else
+                echo -e "${RED}Error: Quality must be a number${NC}" >&2
+                exit 1
+            fi
+            ;;
+        --ocr) OCR=1; shift ;;
+        --dry-run) DRY_RUN=1; shift ;;
+        -o) 
+            if [ -n "$2" ]; then
+                OUTPUT="$2"; shift 2
+            else
+                echo -e "${RED}Error: -o requires an argument${NC}" >&2
+                exit 1
+            fi
+            ;;
+        -*)
+            if [ -z "$INPUT" ]; then
+                echo -e "${RED}Error: Unknown option $1${NC}" >&2
+                show_help
+                exit 1
+            else
+                OUTPUT="$1"
+                shift
+            fi
+            ;;
+        *)
+            if [ -z "$INPUT" ]; then
+                INPUT="$1"
+            elif [ -z "$OUTPUT" ]; then
+                OUTPUT="$1"
+            else
+                echo -e "${RED}Error: Too many arguments${NC}" >&2
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Validate inputs
+if [ -z "$INPUT" ] || [ -z "$OUTPUT" ]; then
+    echo -e "${RED}Error: Input and output files required${NC}" >&2
+    show_help
+    exit 1
+fi
+
+if [ ! -f "$INPUT" ] && [ ! -d "$INPUT" ]; then
+    echo -e "${RED}Error: Input not found: $INPUT${NC}" >&2
+    exit 1
+fi
+
+if [ -f "$OUTPUT" ] && [ "$FORCE" -eq 0 ]; then
+    echo -e "${YELLOW}Warning: Output exists. Use -f to overwrite.${NC}" >&2
+    exit 1
+fi
+
+# Extract extensions
+IN_EXT="${INPUT##*.}"
+OUT_EXT="${OUTPUT##*.}"
+IN_EXT=$(echo "$IN_EXT" | tr '[:upper:]' '[:lower:]')
+OUT_EXT=$(echo "$OUT_EXT" | tr '[:upper:]' '[:lower:]')
+BASENAME=$(basename "$INPUT" .$IN_EXT)
+
+[ "$VERBOSE" -eq 1 ] && echo -e "${BLUE}Converting: $INPUT ($IN_EXT) → $OUTPUT ($OUT_EXT)${NC}"
+
+# Dry run mode
+if [ "$DRY_RUN" -eq 1 ]; then
+    echo -e "${CYAN}[DRY RUN] Would convert: $INPUT → $OUTPUT${NC}"
+    exit 0
+fi
+
+# Create temp directory
+TMPDIR=$(mktemp -d)
+cleanup() {
+    rm -rf "$TMPDIR"
+}
+trap cleanup EXIT
+
+# Quality settings
+QUALITY_OPT=""
+if [ -n "$QUALITY" ]; then
+    case "$OUT_EXT" in
+        jpg|jpeg) QUALITY_OPT="-quality $QUALITY" ;;
+        png) QUALITY_OPT="-quality $QUALITY" ;;
+        mp3) QUALITY_OPT="-q:a $((QUALITY/10))" ;;
+        *) QUALITY_OPT="" ;;
+    esac
+fi
+
+# Check command availability
+check_cmd() {
+    if ! command -v "$1" &> /dev/null; then
+        echo -e "${RED}Error: $1 is not installed${NC}" >&2
+        echo -e "${YELLOW}Install with: $2${NC}" >&2
+        return 1
+    fi
+}
+
+# Main conversion function
+convert_file() {
+    case "$IN_EXT" in
+        # Documents
+        md|markdown|rst|html|htm|tex|txt)
+            case "$OUT_EXT" in
+                pdf)
+                    check_cmd pandoc "pip install pandoc"
+                    pandoc "$INPUT" -o "$OUTPUT" --pdf-engine=xelatex 2>/dev/null || \
+                    pandoc "$INPUT" -o "$OUTPUT"
+                    ;;
+                docx|odt|epub|rtf|html|tex|txt)
+                    check_cmd pandoc "pip install pandoc"
+                    pandoc "$INPUT" -o "$OUTPUT"
+                    ;;
+                md|markdown)
+                    check_cmd pandoc "pip install pandoc"
+                    pandoc "$INPUT" -t markdown -o "$OUTPUT"
+                    ;;
+                *) echo -e "${RED}Error: Cannot convert $IN_EXT to $OUT_EXT${NC}" >&2; return 1 ;;
+            esac
+            ;;
+        
+        # Office documents
+        doc|docx|odt|ods|odp|ppt|pptx|xls|xlsx|rtf)
+            case "$OUT_EXT" in
+                pdf|txt|docx|odt|html)
+                    check_cmd libreoffice "sudo apt install libreoffice"
+                    OUTDIR=$(dirname "$(realpath "$OUTPUT")")
+                    cd "$TMPDIR"
+                    libreoffice --headless --convert-to "$OUT_EXT" "$INPUT" --outdir "$OUTDIR"
+                    mv "$OUTDIR/$BASENAME.$OUT_EXT" "$OUTPUT"
+                    ;;
+                *) echo -e "${RED}Error: Office to $OUT_EXT not supported${NC}" >&2; return 1 ;;
+            esac
+            ;;
+        
+        # Images
+        jpg|jpeg|png|gif|bmp|tiff|tif|webp|svg|ico|ppm|pgm|pbm|pnm|heic)
+            case "$OUT_EXT" in
+                jpg|jpeg|png|gif|bmp|tiff|tif|webp|ico|ppm|svg)
+                    check_cmd convert "sudo apt install imagemagick"
+                    convert "$INPUT" $QUALITY_OPT "$OUTPUT"
+                    ;;
+                pdf)
+                    check_cmd convert "sudo apt install imagemagick" || \
+                    check_cmd img2pdf "pip install img2pdf"
+                    if command -v img2pdf &> /dev/null; then
+                        img2pdf "$INPUT" -o "$OUTPUT"
+                    else
+                        convert "$INPUT" "$OUTPUT"
+                    fi
+                    ;;
+                txt)
+                    if [ "$OCR" -eq 1 ]; then
+                        check_cmd tesseract "sudo apt install tesseract-ocr"
+                        tesseract "$INPUT" stdout > "$OUTPUT"
+                    else
+                        echo -e "${YELLOW}Hint: Use --ocr for text extraction${NC}" >&2
+                        return 1
+                    fi
+                    ;;
+                *) echo -e "${RED}Error: Image to $OUT_EXT not supported${NC}" >&2; return 1 ;;
+            esac
+            ;;
+        
+        # Audio
+        mp3|wav|flac|aac|ogg|oga|wma|m4a|opus)
+            case "$OUT_EXT" in
+                mp3|wav|flac|aac|ogg|oga|wma|m4a|opus)
+                    check_cmd ffmpeg "sudo apt install ffmpeg"
+                    ffmpeg -hide_banner -loglevel error -i "$INPUT" $QUALITY_OPT -y "$OUTPUT"
+                    ;;
+                *) echo -e "${RED}Error: Audio to $OUT_EXT not supported${NC}" >&2; return 1 ;;
+            esac
+            ;;
+        
+        # Video
+        mp4|avi|mkv|mov|qt|wmv|flv|f4v|webm|m4v|mpg|mpeg|3gp|ogv)
+            case "$OUT_EXT" in
+                mp4|avi|mkv|mov|wmv|flv|webm|m4v|mpg|mpeg|3gp|ogv)
+                    check_cmd ffmpeg "sudo apt install ffmpeg"
+                    ffmpeg -hide_banner -loglevel error -i "$INPUT" $QUALITY_OPT -y "$OUTPUT"
+                    ;;
+                gif)
+                    check_cmd ffmpeg "sudo apt install ffmpeg"
+                    ffmpeg -hide_banner -loglevel error -i "$INPUT" -vf "fps=10,scale=480:-1:flags=lanczos" -loop 0 "$OUTPUT"
+                    ;;
+                mp3|wav|aac|ogg)
+                    check_cmd ffmpeg "sudo apt install ffmpeg"
+                    ffmpeg -hide_banner -loglevel error -i "$INPUT" -vn -y "$OUTPUT"
+                    ;;
+                *) echo -e "${RED}Error: Video to $OUT_EXT not supported${NC}" >&2; return 1 ;;
+            esac
+            ;;
+        
+        # PDF
+        pdf)
+            case "$OUT_EXT" in
+                txt)
+                    check_cmd pdftotext "sudo apt install poppler-utils"
+                    pdftotext "$INPUT" "$OUTPUT"
+                    ;;
+                png|jpg|jpeg|tiff)
+                    check_cmd pdftoppm "sudo apt install poppler-utils"
+                    FORMAT="${OUT_EXT/jpeg/jpg}"
+                    pdftoppm -"$FORMAT" -r 300 "$INPUT" "${OUTPUT%.*}"
+                    [ -f "${OUTPUT%.*}-1.$FORMAT" ] && mv "${OUTPUT%.*}-1.$FORMAT" "$OUTPUT"
+                    ;;
+                html)
+                    check_cmd pdftohtml "sudo apt install poppler-utils"
+                    pdftohtml "$INPUT" "$OUTPUT"
+                    ;;
+                docx|odt)
+                    check_cmd libreoffice "sudo apt install libreoffice"
+                    OUTDIR=$(dirname "$(realpath "$OUTPUT")")
+                    cd "$TMPDIR"
+                    libreoffice --headless --convert-to "$OUT_EXT" "$INPUT" --outdir "$OUTDIR"
+                    mv "$OUTDIR/$BASENAME.$OUT_EXT" "$OUTPUT"
+                    ;;
+                pdfa)
+                    check_cmd gs "sudo apt install ghostscript"
+                    gs -dPDFA -dBATCH -dNOPAUSE -sProcessColorModel=DeviceRGB -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=1 -sOutputFile="$OUTPUT" "$INPUT"
+                    ;;
+                *) echo -e "${RED}Error: PDF to $OUT_EXT not supported${NC}" >&2; return 1 ;;
+            esac
+            ;;
+        
+        # Archives
+        zip|tar|gz|tgz|bz2|tbz|xz|txz|rar|7z)
+            check_cmd 7z "sudo apt install p7zip-full"
+            case "$OUT_EXT" in
+                zip|tar|gz|bz2|xz|7z)
+                    7z x "$INPUT" -o"$TMPDIR/extracted" -y
+                    cd "$TMPDIR/extracted"
+                    case "$OUT_EXT" in
+                        zip) zip -r "$OUTPUT" . ;;
+                        tar) tar -cf "$OUTPUT" . ;;
+                        gz|tgz) tar -czf "$OUTPUT" . ;;
+                        bz2|tbz) tar -cjf "$OUTPUT" . ;;
+                        xz|txz) tar -cJf "$OUTPUT" . ;;
+                        7z) 7z a "$OUTPUT" . ;;
+                    esac
+                    ;;
+                *)
+                    7z x "$INPUT" -o"$OUTPUT" -y
+                    ;;
+            esac
+            ;;
+        
+        # Data formats
+        json|yaml|yml|xml|csv|toml|ini)
+            case "$OUT_EXT" in
+                json|yaml|yml|xml|csv|toml|ini|txt)
+                    check_cmd pandoc "pip install pandoc"
+                    pandoc "$INPUT" -t plain -o "$OUTPUT" 2>/dev/null || cp "$INPUT" "$OUTPUT"
+                    ;;
+                *) echo -e "${RED}Error: Cannot convert $IN_EXT to $OUT_EXT${NC}" >&2; return 1 ;;
+            esac
+            ;;
+        
+        *)
+            echo -e "${YELLOW}Unknown format: $IN_EXT. Trying pandoc...${NC}" >&2
+            check_cmd pandoc "pip install pandoc"
+            pandoc "$INPUT" -o "$OUTPUT" 2>/dev/null || \
+            { echo -e "${RED}Conversion failed${NC}" >&2; return 1; }
+            ;;
+    esac
+}
+
+# Execute
+if convert_file; then
+    echo -e "${GREEN}✓ Success: $OUTPUT${NC}"
+    exit 0
+else
+    exit 1
+fi
