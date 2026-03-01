@@ -1,0 +1,5 @@
+Platform	Status	Notes	
+Linux	✅ Fully supported	All features available	
+macOS	✅ Supported	Install dependencies via Homebrew	
+Termux	⚠️ Partial	LibreOffice not available; limited Office doc support	
+Windows (WSL)	✅ Supported	Use WSL2 for best compatibility	
