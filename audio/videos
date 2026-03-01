@@ -1,0 +1,4 @@
+a2a song.wav song.mp3 -q 8            # WAV to MP3 (quality 8/10)
+a2a video.avi video.mp4               # AVI to MP4
+a2a clip.mp4 audio.mp3                # Extract audio from video
+a2a video.mp4 animation.gif           # Video to GIF
