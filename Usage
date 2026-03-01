@@ -1,0 +1,10 @@
+a2a [OPTIONS] <input> <output>
+
+Options:
+  -h, --help      Show help message
+  -v, --verbose   Verbose output
+  -V, --version   Show version
+  -f, --force     Overwrite output if exists
+  -q, --quality   Quality for images/audio (1-100)
+  --ocr           Enable OCR for image-to-text
+  --dry-run       Preview conversion without executing
