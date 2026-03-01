@@ -1,0 +1,12 @@
+
+Add cloud storage integration (S3, Google Drive)
+ 
+Support for CAD file conversions
+ 
+Batch conversion mode
+ 
+Configuration file support
+ 
+Plugin system for custom converters
+ 
+Web interface
